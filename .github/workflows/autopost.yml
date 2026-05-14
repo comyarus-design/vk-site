@@ -3,10 +3,10 @@ name: VK Autopost
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 6 * * *"
-    - cron: "0 10 * * *"
-    - cron: "0 14 * * *"
-    - cron: "0 18 * * *"
+    - cron: '0 6 * * *'
+    - cron: '0 10 * * *'
+    - cron: '0 14 * * *'
+    - cron: '0 18 * * *'
 
 permissions:
   contents: write
@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Ensure folders exist
         run: |
@@ -43,7 +43,8 @@ jobs:
           git push
 
       - name: Wait for Pages/CDN
-        run: sleep 20
+        run: |
+          sleep 20
 
       - name: Publish post to VK
         env:
