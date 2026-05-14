@@ -1,0 +1,84 @@
+name: Post to VK with Photo
+
+on:
+  workflow_dispatch:
+
+jobs:
+  post_with_photo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Post image to VK wall
+        env:
+          VK_TOKEN: ${{ secrets.VK_COMMUNITY_TOKEN }}
+          VK_GROUP_ID: ${{ secrets.VK_GROUP_ID }}
+          IMAGE_URL: https://picsum.photos/1200/630
+        run: |
+          set -e
+
+          echo "1) Download image"
+          curl -L "$IMAGE_URL" -o image.jpg
+
+          echo "2) Get wall upload server"
+          UPLOAD_RESPONSE=$(curl -s -X POST "https://api.vk.com/method/photos.getWallUploadServer" \
+            -d "group_id=${VK_GROUP_ID}" \
+            -d "access_token=${VK_TOKEN}" \
+            -d "v=5.199")
+
+          echo "$UPLOAD_RESPONSE"
+
+          if echo "$UPLOAD_RESPONSE" | grep -q '"error"'; then
+            echo "Error on photos.getWallUploadServer"
+            exit 1
+          fi
+
+          UPLOAD_URL=$(echo "$UPLOAD_RESPONSE" | jq -r '.response.upload_url')
+
+          echo "3) Upload file to VK upload server"
+          PHOTO_UPLOAD_RESPONSE=$(curl -s -X POST "$UPLOAD_URL" \
+            -F "photo=@image.jpg")
+
+          echo "$PHOTO_UPLOAD_RESPONSE"
+
+          SERVER=$(echo "$PHOTO_UPLOAD_RESPONSE" | jq -r '.server')
+          PHOTO=$(echo "$PHOTO_UPLOAD_RESPONSE" | jq -r '.photo')
+          HASH=$(echo "$PHOTO_UPLOAD_RESPONSE" | jq -r '.hash')
+
+          echo "4) Save wall photo"
+          SAVE_RESPONSE=$(curl -s -X POST "https://api.vk.com/method/photos.saveWallPhoto" \
+            -d "group_id=${VK_GROUP_ID}" \
+            --data-urlencode "photo=${PHOTO}" \
+            -d "server=${SERVER}" \
+            -d "hash=${HASH}" \
+            -d "access_token=${VK_TOKEN}" \
+            -d "v=5.199")
+
+          echo "$SAVE_RESPONSE"
+
+          if echo "$SAVE_RESPONSE" | grep -q '"error"'; then
+            echo "Error on photos.saveWallPhoto"
+            exit 1
+          fi
+
+          PHOTO_OWNER_ID=$(echo "$SAVE_RESPONSE" | jq -r '.response[0].owner_id')
+          PHOTO_ID=$(echo "$SAVE_RESPONSE" | jq -r '.response[0].id')
+          ATTACHMENT="photo${PHOTO_OWNER_ID}_${PHOTO_ID}"
+
+          echo "5) Publish post with attachment"
+          POST_RESPONSE=$(curl -s -X POST "https://api.vk.com/method/wall.post" \
+            -d "owner_id=-${VK_GROUP_ID}" \
+            -d "from_group=1" \
+            --data-urlencode "message=Тестовый пост из GitHub Actions. Проверяем публикацию с фото." \
+            --data-urlencode "attachments=${ATTACHMENT}" \
+            -d "access_token=${VK_TOKEN}" \
+            -d "v=5.199")
+
+          echo "$POST_RESPONSE"
+
+          if echo "$POST_RESPONSE" | grep -q '"error"'; then
+            echo "Error on wall.post"
+            exit 1
+          fi
