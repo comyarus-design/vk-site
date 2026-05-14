@@ -1,0 +1,38 @@
+name: Post to VK
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * *"
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Post text to VK wall
+        env:
+          VK_TOKEN: ${{ secrets.VK_TOKEN }}
+          VK_GROUP_ID: ${{ secrets.VK_GROUP_ID }}
+        run: |
+          POST_TEXT="Тестовый пост из GitHub Actions
+
+          Автопостинг работает.
+          Фото добавим следующим этапом."
+
+          RESPONSE=$(curl -s -X POST "https://api.vk.com/method/wall.post" \
+            -d "owner_id=-${VK_GROUP_ID}" \
+            -d "from_group=1" \
+            -d "message=${POST_TEXT}" \
+            -d "access_token=${VK_TOKEN}" \
+            -d "v=5.199")
+
+          echo "$RESPONSE"
+
+          if echo "$RESPONSE" | grep -q '"error"'; then
+            echo "VK API returned error"
+            exit 1
+          fi
