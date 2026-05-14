@@ -1,1 +1,59 @@
+name: VK Autopost
 
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+    - cron: "0 10 * * *"
+    - cron: "0 14 * * *"
+    - cron: "0 18 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  autopost:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Ensure folders exist
+        run: |
+          mkdir -p posts assets data scripts
+
+      - name: Generate post page and og image
+        env:
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+        run: |
+          python scripts/generate_post.py
+
+      - name: Commit generated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add posts assets data/posted.json
+          git diff --staged --quiet || git commit -m "auto: generate VK post assets"
+          git push
+
+      - name: Wait for Pages/CDN
+        run: sleep 20
+
+      - name: Publish post to VK
+        env:
+          VK_COMMUNITY_TOKEN: ${{ secrets.VK_COMMUNITY_TOKEN }}
+          VK_GROUP_ID: ${{ secrets.VK_GROUP_ID }}
+        run: |
+          python scripts/publish_vk.py
+
+      - name: Commit publish state
+        run: |
+          git add data/posted.json
+          git diff --staged --quiet || git commit -m "auto: mark VK post as published"
+          git push
