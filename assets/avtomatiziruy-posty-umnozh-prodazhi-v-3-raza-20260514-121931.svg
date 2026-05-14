@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#0f172a"/>
+  <circle cx="1020" cy="110" r="120" fill="#38bdf8" opacity="0.18"/>
+  <circle cx="210" cy="520" r="180" fill="#2563eb" opacity="0.16"/>
+  <rect x="70" y="70" width="1060" height="490" rx="34" fill="url(#g)" opacity="0.18"/>
+  <text x="100" y="130" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="28" font-weight="700">VK ПРОРЫВ · АВТОПОСТИНГ</text>
+  <text x="100" y="185" fill="#e2e8f0" font-family="Arial, sans-serif" font-size="26">Автоматизируй посты — умножь продажи в 3 раза!</text>
+  <text x="100" y="250" fill="#ffffff" font-family="Arial, sans-serif" font-size="54" font-weight="700">Автоматизация = x3</text><text x="100" y="320" fill="#ffffff" font-family="Arial, sans-serif" font-size="54" font-weight="700">продажи</text>
+  <rect x="100" y="500" width="300" height="54" rx="16" fill="#ffffff" opacity="0.12"/>
+  <text x="125" y="535" fill="#ffffff" font-family="Arial, sans-serif" font-size="26" font-weight="700">роботы - будущее успеха!</text>
+</svg>
