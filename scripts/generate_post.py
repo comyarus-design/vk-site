@@ -8,7 +8,6 @@ from urllib.error import HTTPError, URLError
 
 REPO_BASE_URL = "https://comyarus-design.github.io/vk-site"
 POSTS_DIR = "posts"
-ASSETS_DIR = "assets"
 DATA_FILE = "data/posted.json"
 
 POST_TYPES = ["sales", "expert", "motivation", "news", "mixed"]
@@ -21,17 +20,8 @@ TYPE_PROMPTS = {
     "mixed": "Сделай смешанный пост для сообщества ВКонтакте: немного пользы, немного мотивации, немного продажи. Тема — роботы, автоматизация постинга и рост результата."
 }
 
-SVG_COLORS = {
-    "sales": ("#0f172a", "#2563eb", "#38bdf8"),
-    "expert": ("#111827", "#0f766e", "#2dd4bf"),
-    "motivation": ("#1e1b4b", "#7c3aed", "#c084fc"),
-    "news": ("#111827", "#b91c1c", "#f59e0b"),
-    "mixed": ("#0b1120", "#1d4ed8", "#22c55e"),
-}
-
 def ensure_dirs():
     os.makedirs(POSTS_DIR, exist_ok=True)
-    os.makedirs(ASSETS_DIR, exist_ok=True)
     os.makedirs("data", exist_ok=True)
 
 def load_posted():
@@ -80,8 +70,7 @@ def call_perplexity(prompt):
                     "Структура ответа строго такая:\n"
                     "TITLE: короткий цепкий заголовок\n"
                     "DESCRIPTION: короткое описание до 160 символов\n"
-                    "POST: основной текст поста до 1200 символов\n"
-                    "IMAGE_TEXT: короткая фраза для обложки до 7 слов"
+                    "POST: основной текст поста до 1200 символов"
                 )
             },
             {
@@ -117,7 +106,6 @@ def parse_generation(text):
     title = ""
     description = ""
     post = ""
-    image_text = ""
 
     for line in text.splitlines():
         if line.startswith("TITLE:"):
@@ -126,8 +114,6 @@ def parse_generation(text):
             description = line.replace("DESCRIPTION:", "", 1).strip()
         elif line.startswith("POST:"):
             post = line.replace("POST:", "", 1).strip()
-        elif line.startswith("IMAGE_TEXT:"):
-            image_text = line.replace("IMAGE_TEXT:", "", 1).strip()
 
     if not title:
         title = "Роботы — будущее успеха!"
@@ -135,60 +121,8 @@ def parse_generation(text):
         description = "Автоматизация помогает расти быстрее и делать больше без лишней рутины."
     if not post:
         post = "Роботы берут на себя рутину, а ты концентрируешься на росте, эффективности и результате."
-    if not image_text:
-        image_text = "Будущее успеха"
 
-    return title, description[:160], post[:1200], image_text[:60]
-
-def wrap_svg_text(text, max_len=18):
-    words = text.split()
-    lines = []
-    current = []
-
-    for w in words:
-        test = " ".join(current + [w]).strip()
-        if len(test) <= max_len:
-            current.append(w)
-        else:
-            if current:
-                lines.append(" ".join(current))
-            current = [w]
-    if current:
-        lines.append(" ".join(current))
-    return lines[:3]
-
-def build_svg(post_type, title, image_text):
-    bg, accent1, accent2 = SVG_COLORS[post_type]
-    lines = wrap_svg_text(image_text, 18)
-    text_y = 250
-
-    text_blocks = []
-    for i, line in enumerate(lines):
-        y = text_y + i * 70
-        safe_line = html.escape(line)
-        text_blocks.append(
-            f'<text x="100" y="{y}" fill="#ffffff" font-family="Arial, sans-serif" font-size="54" font-weight="700">{safe_line}</text>'
-        )
-
-    safe_title = html.escape(title[:60])
-
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="{accent1}"/>
-      <stop offset="100%" stop-color="{accent2}"/>
-    </linearGradient>
-  </defs>
-  <rect width="1200" height="630" fill="{bg}"/>
-  <circle cx="1020" cy="110" r="120" fill="{accent2}" opacity="0.18"/>
-  <circle cx="210" cy="520" r="180" fill="{accent1}" opacity="0.16"/>
-  <rect x="70" y="70" width="1060" height="490" rx="34" fill="url(#g)" opacity="0.18"/>
-  <text x="100" y="130" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="28" font-weight="700">VK ПРОРЫВ · АВТОПОСТИНГ</text>
-  <text x="100" y="185" fill="#e2e8f0" font-family="Arial, sans-serif" font-size="26">{safe_title}</text>
-  {''.join(text_blocks)}
-  <rect x="100" y="500" width="300" height="54" rx="16" fill="#ffffff" opacity="0.12"/>
-  <text x="125" y="535" fill="#ffffff" font-family="Arial, sans-serif" font-size="26" font-weight="700">роботы - будущее успеха!</text>
-</svg>'''
+    return title, description[:160], post[:1200]
 
 def build_html(title, description, post, image_url, post_url):
     safe_title = html.escape(title)
@@ -273,24 +207,17 @@ def main():
 
     prompt = TYPE_PROMPTS[post_type]
     generation = call_perplexity(prompt)
-    title, description, post, image_text = parse_generation(generation)
+    title, description, post = parse_generation(generation)
 
     now = datetime.now(timezone.utc)
     stamp = now.strftime("%Y%m%d-%H%M%S")
     slug = slugify(title)[:50] + "-" + stamp
 
-    svg_filename = f"{slug}.svg"
     html_filename = f"{slug}.html"
-
-    svg_path = os.path.join(ASSETS_DIR, svg_filename)
     html_path = os.path.join(POSTS_DIR, html_filename)
 
-    image_url = f"{REPO_BASE_URL}/assets/{svg_filename}"
+    image_url = f"{REPO_BASE_URL}/image.png"
     post_url = f"{REPO_BASE_URL}/posts/{html_filename}"
-
-    svg_content = build_svg(post_type, title, image_text)
-    with open(svg_path, "w", encoding="utf-8") as f:
-        f.write(svg_content)
 
     html_content = build_html(title, description, post, image_url, post_url)
     with open(html_path, "w", encoding="utf-8") as f:
@@ -301,7 +228,6 @@ def main():
         "title": title,
         "description": description,
         "post_text": post,
-        "image_text": image_text,
         "post_type": post_type,
         "image_url": image_url,
         "post_url": post_url,
