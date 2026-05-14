@@ -1,0 +1,30 @@
+name: Post Link Preview to VK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  post_link_preview:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Publish VK post with external preview link
+        env:
+          VK_TOKEN: ${{ secrets.VK_COMMUNITY_TOKEN }}
+          VK_GROUP_ID: ${{ secrets.VK_GROUP_ID }}
+          POST_LINK: https://comyarus-design.github.io/vk-site/post-001.html
+        run: |
+          RESPONSE=$(curl -s -X POST "https://api.vk.com/method/wall.post" \
+            -d "owner_id=-${VK_GROUP_ID}" \
+            -d "from_group=1" \
+            --data-urlencode "message=Тестируем пост с картинкой через внешнюю ссылку-превью." \
+            --data-urlencode "attachments=${POST_LINK}" \
+            -d "access_token=${VK_TOKEN}" \
+            -d "v=5.199")
+
+          echo "$RESPONSE"
+
+          if echo "$RESPONSE" | grep -q '"error"'; then
+            echo "VK API returned error"
+            exit 1
+          fi
