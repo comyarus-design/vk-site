@@ -15,7 +15,7 @@ def load_posted():
         raise RuntimeError("В data/posted.json нет постов для публикации")
     return data
 
-def vk_wall_post(message, link):
+def vk_wall_post(message):
     token = os.getenv("VK_COMMUNITY_TOKEN")
     group_id = os.getenv("VK_GROUP_ID")
 
@@ -30,7 +30,6 @@ def vk_wall_post(message, link):
         "owner_id": owner_id,
         "from_group": 1,
         "message": message,
-        "attachments": link,
         "access_token": token,
         "v": VK_API_VERSION
     }
@@ -64,10 +63,12 @@ def main():
     if last_post.get("vk_published"):
         raise RuntimeError("Последний пост уже опубликован в VK")
 
-    message = last_post["post_text"].strip()
     link = last_post["post_url"].strip()
+    post_text = last_post["post_text"].strip()
 
-    response = vk_wall_post(message, link)
+    message = f"{post_text}\n\n{link}"
+
+    response = vk_wall_post(message)
 
     last_post["vk_published"] = True
     last_post["vk_post_id"] = response.get("post_id")
